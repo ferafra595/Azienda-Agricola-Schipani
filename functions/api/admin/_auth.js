@@ -1,0 +1,7 @@
+const enc = new TextEncoder();
+function b64url(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function hmac(secret,value){const key=await crypto.subtle.importKey('raw',enc.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);return b64url(await crypto.subtle.sign('HMAC',key,enc.encode(value)))}
+export async function makeSession(secret){const exp=Date.now()+1000*60*60*12;const payload=`admin.${exp}`;return `${payload}.${await hmac(secret,payload)}`}
+export async function validSession(request,secret){if(!secret)return false;const cookie=request.headers.get('Cookie')||'';const token=cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('schipani_admin='))?.split('=')[1];if(!token)return false;const parts=token.split('.');if(parts.length!==3)return false;const payload=`${parts[0]}.${parts[1]}`;if(parts[0]!=='admin'||Number(parts[1])<Date.now())return false;const expected=await hmac(secret,payload);return timingSafe(expected,parts[2])}
+function timingSafe(a,b){if(a.length!==b.length)return false;let out=0;for(let i=0;i<a.length;i++)out|=a.charCodeAt(i)^b.charCodeAt(i);return out===0}
+export async function requireAdmin(context){if(!await validSession(context.request,context.env.ADMIN_SESSION_SECRET))return new Response(JSON.stringify({error:'Sessione non valida'}),{status:401,headers:{'Content-Type':'application/json'}});return null}
