@@ -1,9 +1,0 @@
-{
-  "name": "azienda-agricola-schipani",
-  "private": true,
-  "scripts": {
-    "dev": "wrangler pages dev public --d1 DB=schipani-db --r2 MEDIA=schipani-media",
-    "deploy": "wrangler pages deploy public"
-  },
-  "devDependencies": {"wrangler": "^4.0.0"}
-}
